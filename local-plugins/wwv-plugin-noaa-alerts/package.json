@@ -1,0 +1,17 @@
+{
+  "name": "@worldwideview/wwv-plugin-noaa-alerts",
+  "version": "1.0.0",
+  "description": "Live NOAA weather alerts and warnings for the Gulf Coast region",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@worldwideview/wwv-plugin-sdk": "workspace:*"
+  },
+  "worldwideview": {
+    "id": "noaa-alerts",
+    "type": "data-layer",
+    "category": "natural-disaster",
+    "capabilities": ["data:own"],
+    "icon": "CloudLightning"
+  }
+}

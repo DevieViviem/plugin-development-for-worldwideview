@@ -1,0 +1,17 @@
+{
+  "name": "@worldwideview/wwv-plugin-noaa-weather",
+  "version": "1.0.0",
+  "description": "NOAA weather station observations across Texas",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@worldwideview/wwv-plugin-sdk": "workspace:*"
+  },
+  "worldwideview": {
+    "id": "noaa-stations",
+    "type": "data-layer",
+    "category": "natural-disaster",
+    "capabilities": ["data:own"],
+    "icon": "Thermometer"
+  }
+}

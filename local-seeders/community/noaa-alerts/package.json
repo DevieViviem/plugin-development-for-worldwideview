@@ -1,0 +1,6 @@
+{
+  "name": "@worldwideview/seeder-noaa-alerts",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "seeder.mjs"
+}
