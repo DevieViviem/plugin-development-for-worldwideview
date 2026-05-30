@@ -1,4 +1,4 @@
-const NOAA_ALERTS_URL = 'https://api.weather.gov/alerts/active?area=TX,LA,MS,AL,FL';
+const NOAA_ALERTS_URL = 'https://api.weather.gov/alerts/active?status=actual&message_type=alert,update';
 
 export default {
   name: "noaa-alerts",

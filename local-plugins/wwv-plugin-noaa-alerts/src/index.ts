@@ -17,35 +17,44 @@ const SEVERITY_COLORS: Record<string, string> = {
   Unknown: "#AAAAAA",
 };
 
+function getEngineBaseUrl() {
+  if (typeof window === "undefined") return "http://localhost:5050";
+  return `${window.location.protocol}//${window.location.hostname}:5050`;
+}
+
 function NOAAAlertsGlobeComponent({ viewer, enabled }: { viewer: any; enabled: boolean }) {
-  const primitivesRef = useRef<any[]>([]);
+  const entitiesRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (!viewer || viewer.isDestroyed()) return;
 
-    // Clean up existing primitives
-    primitivesRef.current.forEach(p => {
-      if (!viewer.isDestroyed() && viewer.scene.primitives.contains(p)) {
-        viewer.scene.primitives.remove(p);
-      }
+    // Clean up existing entities
+    entitiesRef.current.forEach(e => {
+      if (!viewer.isDestroyed()) viewer.entities.remove(e);
     });
-    primitivesRef.current = [];
+    entitiesRef.current = [];
 
     if (!enabled) return;
 
     const Cesium = (globalThis as any).__WWV_HOST__?.Cesium;
-    if (!Cesium) return;
+    if (!Cesium) {
+      console.error("[NOAA-Alerts] Cesium not available in host globals");
+      return;
+    }
 
-    // Fetch alert data and draw polygons
-    const engineUrl = (globalThis as any).__WWV_HOST__?.getEngineUrl?.() ?? "http://localhost:5050";
+    const engineUrl = getEngineBaseUrl();
     fetch(`${engineUrl}/api/noaa-alerts?lookback=15m`)
       .then(r => r.json())
       .then(data => {
         if (!data.items || viewer.isDestroyed()) return;
         data.items.forEach((item: any) => {
           if (!item.polygon || item.polygon.length < 3) return;
-          const color = Cesium.Color.fromCssColorString(SEVERITY_COLORS[item.severity] ?? "#AAAAAA").withAlpha(0.3);
-          const outlineColor = Cesium.Color.fromCssColorString(SEVERITY_COLORS[item.severity] ?? "#AAAAAA");
+          const color = Cesium.Color.fromCssColorString(
+            SEVERITY_COLORS[item.severity] ?? "#AAAAAA"
+          ).withAlpha(0.3);
+          const outlineColor = Cesium.Color.fromCssColorString(
+            SEVERITY_COLORS[item.severity] ?? "#AAAAAA"
+          );
           const positions = item.polygon.map((p: any) =>
             Cesium.Cartesian3.fromDegrees(p.longitude, p.latitude)
           );
@@ -58,19 +67,19 @@ function NOAAAlertsGlobeComponent({ viewer, enabled }: { viewer: any; enabled: b
               outlineWidth: 2,
               heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
             },
-            properties: { noaa_alert: true }
           });
-          primitivesRef.current.push(entity);
+          entitiesRef.current.push(entity);
         });
         viewer.scene.requestRender();
+        console.log(`[NOAA-Alerts] Drew ${entitiesRef.current.length} alert polygons`);
       })
-      .catch(console.error);
+      .catch(e => console.error("[NOAA-Alerts] Globe component fetch error:", e));
 
     return () => {
-      primitivesRef.current.forEach(e => {
+      entitiesRef.current.forEach(e => {
         if (!viewer.isDestroyed()) viewer.entities.remove(e);
       });
-      primitivesRef.current = [];
+      entitiesRef.current = [];
     };
   }, [viewer, enabled]);
 
@@ -83,7 +92,7 @@ export class NOAAWeatherAlertsPlugin implements WorldPlugin {
   description = "Live weather alerts, warnings, and advisories from the National Weather Service covering TX, LA, MS, AL, and FL.";
   icon = "CloudLightning";
   category = "natural-disaster" as const;
-  version = "1.0.2";
+  version = "1.0.3";
 
   private ctx?: PluginContext;
 
@@ -97,7 +106,7 @@ export class NOAAWeatherAlertsPlugin implements WorldPlugin {
 
   async fetch(timeRange: TimeRange): Promise<GeoEntity[]> {
     try {
-      const engineUrl = this.ctx?.getEngineUrl() ?? "http://localhost:5050";
+      const engineUrl = getEngineBaseUrl();
       const res = await fetch(`${engineUrl}/api/noaa-alerts?lookback=15m`);
       if (!res.ok) throw new Error(`Engine returned ${res.status}`);
       const data = await res.json();
@@ -136,7 +145,6 @@ export class NOAAWeatherAlertsPlugin implements WorldPlugin {
       color: "#FF6600",
       clusterEnabled: true,
       clusterDistance: 50,
-      disableDefaultRendering: false,
     };
   }
 
